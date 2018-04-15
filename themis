@@ -1,0 +1,54 @@
+#!/usr/bin/env ruby
+
+require 'aws-sdk'
+require 'tty-prompt'
+require 'colorize'
+
+@prompt = TTY::Prompt.new
+region = @prompt.select("Select Region:", %w(us-west-2 us-east-1))
+ENV[ 'AWS_REGION' ] = region
+puts
+
+@as = Aws::AutoScaling::Client.new
+
+def desired_getter( name )
+  @as.describe_auto_scaling_groups( auto_scaling_group_names: [ name ], max_records: 1 ).auto_scaling_groups[ 0 ].desired_capacity
+end
+
+def desired_setter( name, default )
+  pname = name.capitalize
+  puts pname.bold.light_green
+  original_quantity = desired_getter( name )
+  puts "Current #{ pname } quantity: #{ original_quantity }. Default: #{ default }"
+  quantity = @prompt.slider( 'Desired Capacity', max: 30, step: 1, default: desired_getter( name ) )
+  @as.set_desired_capacity({ auto_scaling_group_name: name, desired_capacity: quantity, honor_cooldown: false })
+  if quantity == original_quantity
+    puts "No change in desired capacity."
+  else
+    puts "#{ pname } capacity updated."
+  end
+  puts
+end
+
+def print_current( *array )
+  puts 'Current Quantities'.bold.light_green
+  array.each do |number|
+    puts "#{ number.capitalize.cyan.ljust( 35 ) } #{ desired_getter( number ) }"
+  end
+  @prompt.yes?( "Update quantities?" ) ? true : exit!
+end
+
+if region == "us-west-2"
+  print_current( 'maelstrom', 'anemoi', 'maelstrom-backup', 'anmeoi-backup' )
+  puts
+  desired_setter( 'maelstrom', 4 )
+  desired_setter( 'anemoi', 4 )
+  desired_setter( 'maelstrom-backup', 0 )
+  desired_setter( 'anmeoi-backup', 0 )
+elsif region == "us-east-1"
+  print_current( 'maelstrom', 'anemoi', 'anemoi-backup' )
+  puts
+  desired_setter( 'maelstrom', 4 )
+  desired_setter( 'anemoi', 4 )
+  desired_setter( 'anemoi-backup', 0 )
+end
