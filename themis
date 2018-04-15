@@ -3,9 +3,19 @@
 require 'aws-sdk'
 require 'tty-prompt'
 require 'colorize'
+require 'yaml'
 
 @prompt = TTY::Prompt.new
-region = @prompt.select("Select Region:", %w(us-west-2 us-east-1))
+config = YAML.load_file('/Users/alex/dev/themis/config.yml')
+
+# Extract regions from conf.yml
+regions = []
+config.each{ |region| regions << region[0] }
+
+# Select AWS_REGION from options available in conf.yml
+region = @prompt.select('Region:') do |menu|
+  regions.each{ |region| menu.choice region }
+end
 ENV[ 'AWS_REGION' ] = region
 puts
 
@@ -20,35 +30,31 @@ def desired_setter( name, default )
   puts pname.bold.light_green
   original_quantity = desired_getter( name )
   puts "Current #{ pname } quantity: #{ original_quantity }. Default: #{ default }"
-  quantity = @prompt.slider( 'Desired Capacity', max: 30, step: 1, default: desired_getter( name ) )
+  quantity = @prompt.slider( 'Desired Capacity:', max: 30, step: 1, default: desired_getter( name ) )
   @as.set_desired_capacity({ auto_scaling_group_name: name, desired_capacity: quantity, honor_cooldown: false })
-  if quantity == original_quantity
-    puts "No change in desired capacity."
-  else
+  if quantity != original_quantity
     puts "#{ pname } capacity updated."
   end
   puts
 end
 
-def print_current( *array )
+def print_current( array )
   puts 'Current Quantities'.bold.light_green
   array.each do |number|
     puts "#{ number.capitalize.cyan.ljust( 35 ) } #{ desired_getter( number ) }"
   end
   @prompt.yes?( "Update quantities?" ) ? true : exit!
+  puts
 end
 
-if region == "us-west-2"
-  print_current( 'maelstrom', 'anemoi', 'maelstrom-backup', 'anmeoi-backup' )
-  puts
-  desired_setter( 'maelstrom', 4 )
-  desired_setter( 'anemoi', 4 )
-  desired_setter( 'maelstrom-backup', 0 )
-  desired_setter( 'anmeoi-backup', 0 )
-elsif region == "us-east-1"
-  print_current( 'maelstrom', 'anemoi', 'anemoi-backup' )
-  puts
-  desired_setter( 'maelstrom', 4 )
-  desired_setter( 'anemoi', 4 )
-  desired_setter( 'anemoi-backup', 0 )
+groups = []
+config[ region ].each do |group|
+  groups << group[0]
+end
+
+print_current( groups )
+
+config[ region ].each do |group|
+  default = group[1]
+  desired_setter( group[0], group[1] )
 end
