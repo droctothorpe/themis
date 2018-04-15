@@ -6,7 +6,7 @@ require 'colorize'
 require 'yaml'
 
 @prompt = TTY::Prompt.new
-config = YAML.load_file('/Users/alex/dev/themis/config.yml')
+config = YAML.load_file('config.yml')
 
 # Extract regions from conf.yml
 regions = []
