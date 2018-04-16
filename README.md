@@ -6,7 +6,7 @@ It uses v2 of the AWS Ruby SDK.
 
 After cloning:
 1. run `bundle install`.
-2. Update the config.yml with the regions and autoscaling group names unique to your infrastructure.
+2. Update the `regions` file with the AWS regions that you utilize.
 
 To run the script:
 ```./themis```
@@ -15,7 +15,7 @@ Sample output:
 <!-- ![Alt text](output.png?raw=true "output") -->
 
 <p align="left">
-  <img src="output.png" width="350"/>
+  <img src="screenshot.png" width="350"/>
 </p>
 
 Pull requests / comments / feature requests are encouraged.

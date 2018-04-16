@@ -3,56 +3,21 @@
 require 'aws-sdk'
 require 'tty-prompt'
 require 'colorize'
-require 'yaml'
 
-@prompt = TTY::Prompt.new
+@prompt = TTY::Prompt.new( interrupt: :exit, active_color: :bright_green )
 
 @as = Aws::AutoScaling::Client.new
-
-# Populate conf file
-if ARGV[0] == "config"
-  region = @prompt.select("Select Region:", %w(us-east-1 us-west-2 us-east-2 us-west-1 ))
-  string = region + ":"
-  data = @as.describe_auto_scaling_groups
-  data.auto_scaling_groups.each do |group|
-    string += "\n  #{group.auto_scaling_group_name}: #{group.desired_capacity}"
-  end
-  puts string
-  update_conf = @prompt.yes?( "Add to config.yml?" )
-  if update_conf
-    open('config.yml', 'a') { |f|
-      f.puts string
-    }
-    puts "Update to config.yml complete."
-    exit!
-  else
-    exit!
-  end
-end
-
-config = YAML.load_file('config.yml')
-
-# Extract regions from conf.yml
-regions = []
-
-config.each{ |region| regions << region[0] }
-
-# Select AWS_REGION from options available in conf.yml
-region = @prompt.select('Region:') do |menu|
-  regions.each{ |region| menu.choice region }
-end
-ENV[ 'AWS_REGION' ] = region
-puts
 
 def desired_getter( name )
   @as.describe_auto_scaling_groups( auto_scaling_group_names: [ name ], max_records: 1 ).auto_scaling_groups[ 0 ].desired_capacity
 end
 
-def desired_setter( name, default )
+def desired_setter( name )
+  puts
   pname = name.capitalize
   puts pname.bold.light_green
   original_quantity = desired_getter( name )
-  puts "Current #{ pname } quantity: #{ original_quantity }. Default: #{ default }"
+  puts "Current #{ pname } quantity: #{ original_quantity }."
   quantity = @prompt.slider( 'Desired Capacity:', max: 30, step: 1, default: desired_getter( name ) )
   @as.set_desired_capacity({ auto_scaling_group_name: name, desired_capacity: quantity, honor_cooldown: false })
   if quantity != original_quantity
@@ -61,24 +26,34 @@ def desired_setter( name, default )
   puts
 end
 
-def print_current( array )
-  puts 'Current Quantities'.bold.light_green
-  array.each do |number|
-    puts "#{ number.capitalize.cyan.ljust( 35 ) } #{ desired_getter( number ) }"
+def list_groups
+  # Construct regions array from regions file
+  regions = []
+  f = File.open('regions', "r")
+  f.each_line { |line| regions << line.strip }
+  f.close
+
+  # Select region
+  region = @prompt.select( "Select Region:", regions )
+  ENV[ 'AWS_REGION' ] = region
+  data = @as.describe_auto_scaling_groups
+
+  # Describe ASGs in region
+  groups = {}
+  data.auto_scaling_groups.each do |group|
+    groups[ group.auto_scaling_group_name ] = group.desired_capacity
   end
-  @prompt.yes?( "Update quantities?" ) ? true : exit!
-  puts
+  return groups
+end
+
+def select_group
+  groups = list_groups
+  selection = @prompt.select( "Select ASG:", per_page: 15 ) do |menu|
+    groups.each do |group, quantity|
+      menu.choice name: "#{ group }: #{ quantity }", value: group
+    end
+  end
 end
 
 # Invocation
-groups = []
-config[ region ].each do |group|
-  groups << group[0]
-end
-
-print_current( groups )
-
-config[ region ].each do |group|
-  default = group[1]
-  desired_setter( group[0], default )
-end
+desired_setter( select_group )
