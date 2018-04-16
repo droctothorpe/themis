@@ -6,8 +6,6 @@ require 'colorize'
 
 @prompt = TTY::Prompt.new( interrupt: :exit, active_color: :bright_green )
 
-
-
 def desired_getter( name )
   @as.describe_auto_scaling_groups( auto_scaling_group_names: [ name ], max_records: 1 ).auto_scaling_groups[ 0 ].desired_capacity
 end
