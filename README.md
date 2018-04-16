@@ -12,6 +12,6 @@ To run the script:
 Sample output:
 <!-- ![Alt text](output.png?raw=true "output") -->
 
-<p align="center">
+<p align="left">
   <img src="output.png" width="350"/>
 </p>
