@@ -1,6 +1,6 @@
 # Themis
 
-Themis, named after the [Greek goddess of justice](https://en.wikipedia.org/wiki/Themis), who is typically depicted holding a scale, is a CLI designed to provide a quick and simple way of adjusting the desired capacity of your AWS auto-scaling groups without needing to go into the web console.
+Themis, named after the [Greek goddess of justice](https://en.wikipedia.org/wiki/Themis) [who is typically depicted holding a scale](https://i.ytimg.com/vi/t-jggd6lo-M/maxresdefault.jpg), is a CLI designed to provide a quick and simple way of adjusting the desired capacity of your AWS auto-scaling groups without needing to go into the web console.
 
 It uses v2 of the AWS Ruby SDK.
 
