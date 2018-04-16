@@ -7,7 +7,11 @@ After cloning:
 2. Update the config.yml with the regions and autoscaling group names unique to your infrastructure.
 
 To run the script:
-`./themis`
+```./themis```
 
 Sample output:
-![Alt text](output.png?raw=true "output")
+<!-- ![Alt text](output.png?raw=true "output") -->
+
+<p align="center">
+  <img src="output.png" width="350"/>
+</p>
