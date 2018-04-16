@@ -10,7 +10,9 @@ config = YAML.load_file('config.yml')
 
 # Extract regions from conf.yml
 regions = []
+
 config.each{ |region| regions << region[0] }
+puts regions
 
 # Select AWS_REGION from options available in conf.yml
 region = @prompt.select('Region:') do |menu|
@@ -47,6 +49,8 @@ def print_current( array )
   puts
 end
 
+
+# INVOCATION
 groups = []
 config[ region ].each do |group|
   groups << group[0]
