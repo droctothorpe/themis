@@ -6,10 +6,40 @@ require 'colorize'
 
 @prompt = TTY::Prompt.new( interrupt: :exit, active_color: :bright_green )
 
-@as = Aws::AutoScaling::Client.new
+
 
 def desired_getter( name )
   @as.describe_auto_scaling_groups( auto_scaling_group_names: [ name ], max_records: 1 ).auto_scaling_groups[ 0 ].desired_capacity
+end
+
+def list_groups
+  # Construct regions array from regions file
+  regions = []
+  f = File.open('regions', "r")
+  f.each_line { |line| regions << line.strip }
+  f.close
+
+  # Select region
+  region = @prompt.select( "Select Region:", regions )
+  ENV[ 'AWS_REGION' ] = region
+  @as = Aws::AutoScaling::Client.new
+  data = @as.describe_auto_scaling_groups
+
+  # Describe ASGs in region
+  groups = {}
+  data.auto_scaling_groups.each do |group|
+    groups[ group.auto_scaling_group_name ] = group.desired_capacity
+  end
+  return groups
+end
+
+def select_group
+  groups = list_groups
+  selection = @prompt.select( "Select ASG:", per_page: 15, filter: true ) do |menu|
+    groups.each do |group, quantity|
+      menu.choice name: "#{ group }: #{ quantity }", value: group
+    end
+  end
 end
 
 def desired_setter( name )
@@ -24,35 +54,6 @@ def desired_setter( name )
     puts "#{ pname } capacity updated."
   end
   puts
-end
-
-def list_groups
-  # Construct regions array from regions file
-  regions = []
-  f = File.open('regions', "r")
-  f.each_line { |line| regions << line.strip }
-  f.close
-
-  # Select region
-  region = @prompt.select( "Select Region:", regions )
-  ENV[ 'AWS_REGION' ] = region
-  data = @as.describe_auto_scaling_groups
-
-  # Describe ASGs in region
-  groups = {}
-  data.auto_scaling_groups.each do |group|
-    groups[ group.auto_scaling_group_name ] = group.desired_capacity
-  end
-  return groups
-end
-
-def select_group
-  groups = list_groups
-  selection = @prompt.select( "Select ASG:", per_page: 15 ) do |menu|
-    groups.each do |group, quantity|
-      menu.choice name: "#{ group }: #{ quantity }", value: group
-    end
-  end
 end
 
 # Invocation
