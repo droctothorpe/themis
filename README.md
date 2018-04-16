@@ -7,6 +7,7 @@ It uses v2 of the AWS Ruby SDK.
 After cloning:
 1. run `bundle install`.
 2. Update the `regions` file with the AWS regions that you utilize.
+3. Please note, themis assumes that your AWS programmatic credentials are already loaded.
 
 To run the script:
 ```./themis```
