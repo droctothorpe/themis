@@ -6,6 +6,30 @@ require 'colorize'
 require 'yaml'
 
 @prompt = TTY::Prompt.new
+
+@as = Aws::AutoScaling::Client.new
+
+# Populate conf file
+if ARGV[0] == "config"
+  region = @prompt.select("Select Region:", %w(us-east-1 us-east-2 us-west-1 us-west-2 ))
+  string = region + ":"
+  data = @as.describe_auto_scaling_groups
+  data.auto_scaling_groups.each do |group|
+    string += "\n  #{group.auto_scaling_group_name}: #{group.desired_capacity}"
+  end
+  puts string
+  update_conf = @prompt.yes?( "Add to config.yml?" )
+  if update_conf
+    open('config.yml', 'a') { |f|
+      f.puts string
+    }
+    puts "Update to config.yml complete."
+    exit!
+  else
+    exit!
+  end
+end
+
 config = YAML.load_file('config.yml')
 
 # Extract regions from conf.yml
@@ -19,8 +43,6 @@ region = @prompt.select('Region:') do |menu|
 end
 ENV[ 'AWS_REGION' ] = region
 puts
-
-@as = Aws::AutoScaling::Client.new
 
 def desired_getter( name )
   @as.describe_auto_scaling_groups( auto_scaling_group_names: [ name ], max_records: 1 ).auto_scaling_groups[ 0 ].desired_capacity
@@ -48,8 +70,7 @@ def print_current( array )
   puts
 end
 
-
-# INVOCATION
+# Invocation
 groups = []
 config[ region ].each do |group|
   groups << group[0]
@@ -61,6 +82,3 @@ config[ region ].each do |group|
   default = group[1]
   desired_setter( group[0], default )
 end
-
-# x = @as.describe_auto_scaling_groups
-# puts x
