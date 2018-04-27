@@ -10,6 +10,10 @@ def desired_getter( name )
   @as.describe_auto_scaling_groups( auto_scaling_group_names: [ name ], max_records: 1 ).auto_scaling_groups[ 0 ].desired_capacity
 end
 
+def max_getter( name )
+  @as.describe_auto_scaling_groups( auto_scaling_group_names: [ name ], max_records: 1 ).auto_scaling_groups[ 0 ].max_size
+end
+
 def list_groups
   # Construct regions array from regions file
   regions = []
@@ -46,7 +50,7 @@ def desired_setter( name )
   puts pname.bold.light_green
   original_quantity = desired_getter( name )
   puts "Current #{ pname } quantity: #{ original_quantity }."
-  quantity = @prompt.slider( 'Desired Capacity:', max: 30, step: 1, default: desired_getter( name ) )
+  quantity = @prompt.slider( 'Desired Capacity:', max: max_getter( name ), step: 1, default: desired_getter( name ) )
   @as.set_desired_capacity({ auto_scaling_group_name: name, desired_capacity: quantity, honor_cooldown: false })
   if quantity != original_quantity
     puts "#{ pname } capacity updated."
